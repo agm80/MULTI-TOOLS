@@ -8,7 +8,15 @@ import { getFavorites, isFavorite, toggleFavorite, getRecents, pushRecent, getTh
 const ALL_TOOLS = [...harianTools, ...converterTools, ...textTools, ...imageTools, ...devTools];
 const TOOL_MAP = Object.fromEntries(ALL_TOOLS.map(t => [t.id, t]));
 const CATEGORIES = ['Harian', 'Converter', 'Text', 'Image', 'Dev'];
-const CATEGORY_COLOR = { Harian: 'var(--cat-harian)', Converter: 'var(--cat-converter)', Text: 'var(--cat-text)', Image: 'var(--cat-image)', Dev: 'var(--cat-dev)' };
+const CATEGORY_CODE = { Harian: 'H', Converter: 'C', Text: 'T', Image: 'I', Dev: 'D' };
+
+// Bin code: each tool's shelf position within its category, e.g. "H-03".
+const catCounters = {};
+const TOOL_CODE = {};
+ALL_TOOLS.forEach((t) => {
+  catCounters[t.category] = (catCounters[t.category] || 0) + 1;
+  TOOL_CODE[t.id] = `${CATEGORY_CODE[t.category]}-${String(catCounters[t.category]).padStart(2, '0')}`;
+});
 
 const els = {
   tabs: document.getElementById('tabs'),
@@ -25,6 +33,7 @@ const els = {
   noResults: document.getElementById('noResults'),
   backBtn: document.getElementById('backBtn'),
   favToggleBtn: document.getElementById('favToggleBtn'),
+  toolCode: document.getElementById('toolCode'),
   themeToggle: document.getElementById('themeToggle'),
   brandLink: document.getElementById('brandLink'),
 };
@@ -38,7 +47,7 @@ function toolCard(tool) {
   div.className = 'tool-card';
   div.innerHTML = `
     <button class="tool-card__star ${fav ? 'active' : ''}" data-fav="${tool.id}">${fav ? '★' : '☆'}</button>
-    <div class="tool-card__icon" style="background:color-mix(in srgb, ${CATEGORY_COLOR[tool.category]} 18%, transparent); color:${CATEGORY_COLOR[tool.category]}">${tool.icon}</div>
+    <div class="tool-card__tag">${TOOL_CODE[tool.id]}</div>
     <div class="tool-card__name">${tool.name}</div>
     <div class="tool-card__blurb">${tool.blurb || ''}</div>
   `;
@@ -118,6 +127,7 @@ function showTool(tool) {
   tool.mount(els.toolMount);
   document.title = `${tool.name} — Bengkel`;
   pushRecent(tool.id);
+  els.toolCode.textContent = TOOL_CODE[tool.id];
 
   const fav = isFavorite(tool.id);
   els.favToggleBtn.classList.toggle('active', fav);
