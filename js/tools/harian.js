@@ -1,4 +1,4 @@
-import { header, card, copyText } from '../helpers.js';
+import { header, card } from '../helpers.js';
 
 // ---------- 1. Unit Converter ----------
 const UNIT_GROUPS = {
@@ -247,7 +247,7 @@ function mountCountdownTimer(mount) {
     function tick() {
       const diff = target - new Date();
       const $out = c.querySelector('#ct-out');
-      if (!$out) { clearInterval(interval); return; }
+      if (!$out || !$out.isConnected) { clearInterval(interval); return; }
       if (diff <= 0) { $out.textContent = '🎯 Waktunya udah sampai!'; clearInterval(interval); return; }
       const d = Math.floor(diff / 86400000);
       const h = Math.floor((diff % 86400000) / 3600000);

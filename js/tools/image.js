@@ -60,7 +60,10 @@ function mountImageCompressor(mount) {
     const canvas = document.createElement('canvas');
     canvas.width = img.width;
     canvas.height = img.height;
-    canvas.getContext('2d').drawImage(img, 0, 0);
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0);
     const q = c.querySelector('#ic-q').value / 100;
     canvas.toBlob((blob) => {
       resultBlob = blob;
