@@ -375,8 +375,10 @@ function mountImageCropper(mount) {
     ${makeDropzone('cr-file')}
     <div id="cr-controls" hidden style="margin-top:16px">
       <div style="position:relative;display:inline-block;max-width:100%">
-        <img id="cr-img" style="max-width:100%;display:block;border-radius:8px">
-        <div id="cr-box" style="position:absolute;border:2px dashed var(--accent);background:rgba(124,108,255,0.15);cursor:move"></div>
+        <img id="cr-img" draggable="false" style="max-width:100%;display:block;border-radius:8px;-webkit-user-drag:none">
+        <div id="cr-box" style="position:absolute;border:2px dashed var(--accent);background:rgba(124,108,255,0.15);cursor:move;touch-action:none">
+          <div id="cr-handle" style="position:absolute;right:-8px;bottom:-8px;width:18px;height:18px;background:var(--accent);border-radius:50%;cursor:nwse-resize;touch-action:none"></div>
+        </div>
       </div>
       <div class="btn-row">
         <button class="btn" id="cr-crop">Potong</button>
@@ -410,8 +412,10 @@ function mountImageCropper(mount) {
   });
 
   const box = c.querySelector('#cr-box');
+  const handle = c.querySelector('#cr-handle');
   let dragging = false, startX, startY, origLeft, origTop;
   box.addEventListener('pointerdown', (e) => {
+    if (e.target === handle) return;
     dragging = true; startX = e.clientX; startY = e.clientY;
     origLeft = box.offsetLeft; origTop = box.offsetTop;
     box.setPointerCapture(e.pointerId);
@@ -422,6 +426,20 @@ function mountImageCropper(mount) {
     box.style.top = Math.max(0, origTop + (e.clientY - startY)) + 'px';
   });
   box.addEventListener('pointerup', () => { dragging = false; });
+
+  let resizing = false, resizeStartX, resizeStartY, origW, origH;
+  handle.addEventListener('pointerdown', (e) => {
+    e.stopPropagation();
+    resizing = true; resizeStartX = e.clientX; resizeStartY = e.clientY;
+    origW = box.offsetWidth; origH = box.offsetHeight;
+    handle.setPointerCapture(e.pointerId);
+  });
+  handle.addEventListener('pointermove', (e) => {
+    if (!resizing) return;
+    box.style.width = Math.max(24, origW + (e.clientX - resizeStartX)) + 'px';
+    box.style.height = Math.max(24, origH + (e.clientY - resizeStartY)) + 'px';
+  });
+  handle.addEventListener('pointerup', () => { resizing = false; });
 
   c.querySelector('#cr-crop').onclick = () => {
     const $img = c.querySelector('#cr-img');

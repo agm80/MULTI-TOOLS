@@ -183,6 +183,7 @@ function mountQrGenerator(mount) {
     img.style.borderRadius = '8px';
     img.style.background = '#fff';
     img.style.padding = '12px';
+    img.onerror = () => { $holder.innerHTML = '<span style="color:var(--danger)">Gagal memuat QR code — cek koneksi internet kamu.</span>'; };
     $holder.appendChild(img);
     const dl = document.createElement('div');
     dl.className = 'btn-row';
@@ -446,7 +447,11 @@ function mountBarcodeGenerator(mount) {
 
   function gen() {
     const val = c.querySelector('#bc-in').value.trim();
-    if (!val || typeof JsBarcode === 'undefined') return;
+    if (!val) return;
+    if (typeof JsBarcode === 'undefined') {
+      $holder.innerHTML = '<span style="color:var(--danger)">Gagal memuat library barcode dari CDN — cek koneksi internet kamu, terus coba lagi.</span>';
+      return;
+    }
     $holder.innerHTML = '<svg id="bc-svg"></svg>';
     try {
       JsBarcode('#bc-svg', val, { format: 'CODE128', lineColor: '#000', width: 2, height: 80, displayValue: true });
