@@ -3,77 +3,153 @@ import { converterTools } from './tools/converters.js';
 import { textTools } from './tools/text.js';
 import { imageTools } from './tools/image.js';
 import { devTools } from './tools/dev.js';
+import { getFavorites, isFavorite, toggleFavorite, getRecents, pushRecent, getTheme, setTheme } from './helpers.js';
 
 const ALL_TOOLS = [...harianTools, ...converterTools, ...textTools, ...imageTools, ...devTools];
-const CATEGORY_ORDER = ['Harian', 'Converter', 'Text', 'Image', 'Dev'];
+const TOOL_MAP = Object.fromEntries(ALL_TOOLS.map(t => [t.id, t]));
+const CATEGORIES = ['Harian', 'Converter', 'Text', 'Image', 'Dev'];
+const CATEGORY_COLOR = { Harian: 'var(--cat-harian)', Converter: 'var(--cat-converter)', Text: 'var(--cat-text)', Image: 'var(--cat-image)', Dev: 'var(--cat-dev)' };
 
-const nav = document.getElementById('pegboard__nav');
-const toolMount = document.getElementById('toolMount');
-const emptyState = document.getElementById('emptyState');
-const search = document.getElementById('toolSearch');
-const pegboard = document.getElementById('pegboard');
-const navToggle = document.getElementById('navToggle');
-const navClose = document.getElementById('navClose');
-const backdrop = document.getElementById('backdrop');
+const els = {
+  tabs: document.getElementById('tabs'),
+  search: document.getElementById('toolSearch'),
+  homeView: document.getElementById('homeView'),
+  toolView: document.getElementById('toolView'),
+  toolMount: document.getElementById('toolMount'),
+  favSection: document.getElementById('favSection'),
+  favGrid: document.getElementById('favGrid'),
+  recentSection: document.getElementById('recentSection'),
+  recentGrid: document.getElementById('recentGrid'),
+  mainGrid: document.getElementById('mainGrid'),
+  mainGridTitle: document.getElementById('mainGridTitle'),
+  noResults: document.getElementById('noResults'),
+  backBtn: document.getElementById('backBtn'),
+  favToggleBtn: document.getElementById('favToggleBtn'),
+  themeToggle: document.getElementById('themeToggle'),
+  brandLink: document.getElementById('brandLink'),
+};
 
-function openNav() {
-  pegboard.classList.add('open');
-  backdrop.classList.add('open');
-  document.body.classList.add('nav-open');
+let activeTab = 'all';
+let searchQuery = '';
+
+function toolCard(tool) {
+  const fav = isFavorite(tool.id);
+  const div = document.createElement('div');
+  div.className = 'tool-card';
+  div.innerHTML = `
+    <button class="tool-card__star ${fav ? 'active' : ''}" data-fav="${tool.id}">${fav ? '★' : '☆'}</button>
+    <div class="tool-card__icon" style="background:color-mix(in srgb, ${CATEGORY_COLOR[tool.category]} 18%, transparent); color:${CATEGORY_COLOR[tool.category]}">${tool.icon}</div>
+    <div class="tool-card__name">${tool.name}</div>
+    <div class="tool-card__blurb">${tool.blurb || ''}</div>
+  `;
+  div.addEventListener('click', (e) => {
+    if (e.target.closest('[data-fav]')) return;
+    location.hash = tool.id;
+  });
+  div.querySelector('[data-fav]').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const nowFav = toggleFavorite(tool.id);
+    e.target.classList.toggle('active', nowFav);
+    e.target.textContent = nowFav ? '★' : '☆';
+    renderHome();
+  });
+  return div;
 }
-function closeNav() {
-  pegboard.classList.remove('open');
-  backdrop.classList.remove('open');
-  document.body.classList.remove('nav-open');
-}
 
-function buildNav(filter = '') {
-  nav.innerHTML = '';
-  const f = filter.trim().toLowerCase();
-  CATEGORY_ORDER.forEach((cat) => {
-    const items = ALL_TOOLS.filter(t => t.category === cat && t.name.toLowerCase().includes(f));
-    if (!items.length) return;
-    const group = document.createElement('div');
-    group.className = 'pegboard__group';
-    group.innerHTML = `<div class="pegboard__group-label">${cat}</div>`;
-    items.forEach((tool) => {
-      const a = document.createElement('a');
-      a.className = 'pegboard__item';
-      a.href = `#${tool.id}`;
-      a.dataset.id = tool.id;
-      a.innerHTML = `<span class="pegboard__item-icon">${tool.icon}</span><span class="pegboard__item-name">${tool.name}</span>`;
-      group.appendChild(a);
-    });
-    nav.appendChild(group);
+function buildTabs() {
+  els.tabs.innerHTML = '';
+  const allBtn = document.createElement('button');
+  allBtn.className = 'tab' + (activeTab === 'all' ? ' active' : '');
+  allBtn.textContent = 'Semua';
+  allBtn.onclick = () => { activeTab = 'all'; renderHome(); };
+  els.tabs.appendChild(allBtn);
+  CATEGORIES.forEach((cat) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (activeTab === cat ? ' active' : '');
+    btn.textContent = cat;
+    btn.onclick = () => { activeTab = cat; renderHome(); };
+    els.tabs.appendChild(btn);
   });
 }
 
-function loadTool(id) {
-  const tool = ALL_TOOLS.find(t => t.id === id);
-  nav.querySelectorAll('.pegboard__item').forEach(el => el.classList.toggle('active', el.dataset.id === id));
-  if (!tool) {
-    emptyState.hidden = false;
-    toolMount.hidden = true;
-    toolMount.innerHTML = '';
-    return;
+function renderHome() {
+  buildTabs();
+  const q = searchQuery.trim().toLowerCase();
+
+  const favs = getFavorites().map(id => TOOL_MAP[id]).filter(Boolean);
+  if (favs.length && activeTab === 'all' && !q) {
+    els.favSection.hidden = false;
+    els.favGrid.innerHTML = '';
+    favs.forEach(t => els.favGrid.appendChild(toolCard(t)));
+  } else {
+    els.favSection.hidden = true;
   }
-  emptyState.hidden = true;
-  toolMount.hidden = false;
-  toolMount.innerHTML = '';
-  tool.mount(toolMount);
-  document.title = `${tool.name} — Bengkel`;
-  closeNav();
+
+  const recents = getRecents().map(id => TOOL_MAP[id]).filter(Boolean);
+  if (recents.length && activeTab === 'all' && !q) {
+    els.recentSection.hidden = false;
+    els.recentGrid.innerHTML = '';
+    recents.forEach(t => els.recentGrid.appendChild(toolCard(t)));
+  } else {
+    els.recentSection.hidden = true;
+  }
+
+  let list = ALL_TOOLS;
+  if (activeTab !== 'all') list = list.filter(t => t.category === activeTab);
+  if (q) list = list.filter(t => t.name.toLowerCase().includes(q) || (t.blurb || '').toLowerCase().includes(q));
+
+  els.mainGridTitle.textContent = q ? `Hasil pencarian "${searchQuery}"` : activeTab === 'all' ? 'Semua tools' : activeTab;
+  els.mainGrid.innerHTML = '';
+  list.forEach(t => els.mainGrid.appendChild(toolCard(t)));
+  els.noResults.hidden = list.length > 0;
 }
 
-window.addEventListener('hashchange', () => loadTool(location.hash.slice(1)));
-search.addEventListener('input', (e) => {
-  buildNav(e.target.value);
-  const active = location.hash.slice(1);
-  if (active) nav.querySelectorAll('.pegboard__item').forEach(el => el.classList.toggle('active', el.dataset.id === active));
-});
-navToggle.addEventListener('click', openNav);
-navClose.addEventListener('click', closeNav);
-backdrop.addEventListener('click', closeNav);
+function showHome() {
+  els.homeView.hidden = false;
+  els.toolView.hidden = true;
+  document.title = 'Bengkel — Multitool untuk Kerjaan Kecil';
+  renderHome();
+}
 
-buildNav();
-loadTool(location.hash.slice(1));
+function showTool(tool) {
+  els.homeView.hidden = true;
+  els.toolView.hidden = false;
+  els.toolMount.innerHTML = '';
+  tool.mount(els.toolMount);
+  document.title = `${tool.name} — Bengkel`;
+  pushRecent(tool.id);
+
+  const fav = isFavorite(tool.id);
+  els.favToggleBtn.classList.toggle('active', fav);
+  els.favToggleBtn.textContent = fav ? '★ Favorit' : '☆ Favoritkan';
+  els.favToggleBtn.onclick = () => {
+    const nowFav = toggleFavorite(tool.id);
+    els.favToggleBtn.classList.toggle('active', nowFav);
+    els.favToggleBtn.textContent = nowFav ? '★ Favorit' : '☆ Favoritkan';
+  };
+  window.scrollTo(0, 0);
+}
+
+function route() {
+  const id = location.hash.slice(1);
+  const tool = TOOL_MAP[id];
+  if (tool) showTool(tool); else showHome();
+}
+
+window.addEventListener('hashchange', route);
+els.backBtn.addEventListener('click', () => { location.hash = ''; });
+els.brandLink.addEventListener('click', (e) => { e.preventDefault(); location.hash = ''; });
+els.search.addEventListener('input', (e) => { searchQuery = e.target.value; if (!els.homeView.hidden) renderHome(); else if (searchQuery) { location.hash = ''; renderHome(); } });
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  els.themeToggle.textContent = theme === 'dark' ? '🌙' : '☀️';
+}
+els.themeToggle.addEventListener('click', () => {
+  const next = getTheme() === 'dark' ? 'light' : 'dark';
+  setTheme(next);
+  applyTheme(next);
+});
+applyTheme(getTheme());
+
+route();

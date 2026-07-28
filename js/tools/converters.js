@@ -340,13 +340,195 @@ function mountWordCounter(mount) {
   update();
 }
 
+// ---------- 9. Number Base Converter ----------
+function mountNumberBase(mount) {
+  header(mount, 'Converter', 'Number Base Converter', 'Konversi angka antara biner, oktal, desimal, dan heksadesimal secara langsung.');
+  const c = card(`
+    <div class="row">
+      <div><label>Desimal</label><input type="text" id="nb-dec" value="255"></div>
+      <div><label>Biner</label><input type="text" id="nb-bin"></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <div><label>Oktal</label><input type="text" id="nb-oct"></div>
+      <div><label>Heksadesimal</label><input type="text" id="nb-hex"></div>
+    </div>
+  `);
+  mount.appendChild(c);
+  const $dec = c.querySelector('#nb-dec'), $bin = c.querySelector('#nb-bin');
+  const $oct = c.querySelector('#nb-oct'), $hex = c.querySelector('#nb-hex');
+
+  function update(from, value) {
+    const base = { dec: 10, bin: 2, oct: 8, hex: 16 }[from];
+    const n = parseInt(value, base);
+    if (isNaN(n) || value.trim() === '') return;
+    if ($dec !== document.activeElement) $dec.value = n.toString(10);
+    if ($bin !== document.activeElement) $bin.value = n.toString(2);
+    if ($oct !== document.activeElement) $oct.value = n.toString(8);
+    if ($hex !== document.activeElement) $hex.value = n.toString(16).toUpperCase();
+  }
+  $dec.addEventListener('input', () => update('dec', $dec.value));
+  $bin.addEventListener('input', () => update('bin', $bin.value));
+  $oct.addEventListener('input', () => update('oct', $oct.value));
+  $hex.addEventListener('input', () => update('hex', $hex.value));
+  update('dec', '255');
+}
+
+// ---------- 10. Slug Generator ----------
+function mountSlugGenerator(mount) {
+  header(mount, 'Converter', 'Slug Generator', 'Ubah judul jadi slug URL-friendly (lowercase, dash-separated) buat link artikel atau produk.');
+  const c = card(`
+    <label>Judul / teks</label>
+    <input type="text" id="sg-in" value="Cara Bikin Server Minecraft Sendiri!">
+    <label style="margin-top:16px">Slug</label>
+    <div class="output" id="sg-out"></div>
+    <div class="btn-row"><button class="btn" id="sg-copy">Salin</button></div>
+  `);
+  mount.appendChild(c);
+  const $in = c.querySelector('#sg-in');
+  const $out = c.querySelector('#sg-out');
+  function update() {
+    const slug = $in.value.trim().toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '');
+    $out.textContent = slug;
+  }
+  $in.addEventListener('input', update);
+  c.querySelector('#sg-copy').onclick = (e) => copyText($out.textContent, e.target);
+  update();
+}
+
+// ---------- 11. Random Name / Username Generator ----------
+const NAME_ADJ = ['Swift', 'Silent', 'Crimson', 'Golden', 'Shadow', 'Frozen', 'Blazing', 'Mystic', 'Iron', 'Cosmic', 'Rogue', 'Lunar'];
+const NAME_NOUN = ['Wolf', 'Falcon', 'Phoenix', 'Ranger', 'Ninja', 'Knight', 'Tiger', 'Dragon', 'Hunter', 'Pixel', 'Comet', 'Raven'];
+function mountUsernameGenerator(mount) {
+  header(mount, 'Converter', 'Random Name / Username Generator', 'Generate ide username acak — kepake buat akun game, forum, atau server Minecraft/Discord.');
+  const c = card(`
+    <div class="row">
+      <div><label>Jumlah</label><input type="number" id="ug-count" value="8" min="1" max="30"></div>
+      <div><label>Tambahkan angka?</label>
+        <select id="ug-num"><option value="yes">Ya</option><option value="no">Tidak</option></select>
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn" id="ug-gen">Generate</button></div>
+    <label style="margin-top:16px">Hasil</label>
+    <div class="output" id="ug-out"></div>
+  `);
+  mount.appendChild(c);
+  c.querySelector('#ug-gen').onclick = () => {
+    const n = Math.max(1, Math.min(30, parseInt(c.querySelector('#ug-count').value, 10) || 1));
+    const withNum = c.querySelector('#ug-num').value === 'yes';
+    const list = Array.from({ length: n }, () => {
+      const adj = NAME_ADJ[Math.floor(Math.random() * NAME_ADJ.length)];
+      const noun = NAME_NOUN[Math.floor(Math.random() * NAME_NOUN.length)];
+      const num = withNum ? Math.floor(Math.random() * 900 + 100) : '';
+      return `${adj}${noun}${num}`;
+    });
+    c.querySelector('#ug-out').textContent = list.join('\n');
+  };
+  c.querySelector('#ug-gen').click();
+}
+
+// ---------- 12. Barcode Generator ----------
+function mountBarcodeGenerator(mount) {
+  header(mount, 'Converter', 'Barcode Generator', 'Bikin barcode format CODE128 dari teks atau angka, langsung bisa diunduh sebagai SVG.');
+  const c = card(`
+    <label>Teks / angka</label>
+    <input type="text" id="bc-in" value="1234567890">
+    <div class="btn-row"><button class="btn" id="bc-gen">Generate</button></div>
+    <div id="bc-holder" style="margin-top:18px;text-align:center;background:#fff;border-radius:10px;padding:12px"></div>
+    <div class="btn-row" id="bc-dl-row"></div>
+  `);
+  mount.appendChild(c);
+  const $holder = c.querySelector('#bc-holder');
+  const $dlRow = c.querySelector('#bc-dl-row');
+
+  function gen() {
+    const val = c.querySelector('#bc-in').value.trim();
+    if (!val || typeof JsBarcode === 'undefined') return;
+    $holder.innerHTML = '<svg id="bc-svg"></svg>';
+    try {
+      JsBarcode('#bc-svg', val, { format: 'CODE128', lineColor: '#000', width: 2, height: 80, displayValue: true });
+      $dlRow.innerHTML = '';
+      const svg = c.querySelector('#bc-svg');
+      const svgData = new XMLSerializer().serializeToString(svg);
+      const blob = new Blob([svgData], { type: 'image/svg+xml' });
+      const a = document.createElement('a');
+      a.className = 'btn secondary';
+      a.textContent = 'Unduh SVG';
+      a.href = URL.createObjectURL(blob);
+      a.download = 'barcode.svg';
+      $dlRow.appendChild(a);
+    } catch (e) {
+      $holder.innerHTML = `<span style="color:var(--danger)">Gagal generate: teks tidak valid buat CODE128.</span>`;
+    }
+  }
+  c.querySelector('#bc-gen').onclick = gen;
+  gen();
+}
+
+// ---------- 13. Text to ASCII Art ----------
+const ASCII_FONT = {
+  A: [' █ ', '█ █', '███', '█ █', '█ █'], B: ['██ ', '█ █', '██ ', '█ █', '██ '],
+  C: [' ██', '█  ', '█  ', '█  ', ' ██'], D: ['██ ', '█ █', '█ █', '█ █', '██ '],
+  E: ['███', '█  ', '██ ', '█  ', '███'], F: ['███', '█  ', '██ ', '█  ', '█  '],
+  G: [' ██', '█  ', '█ █', '█ █', ' ██'], H: ['█ █', '█ █', '███', '█ █', '█ █'],
+  I: ['███', ' █ ', ' █ ', ' █ ', '███'], J: ['  █', '  █', '  █', '█ █', ' █ '],
+  K: ['█ █', '█ █', '██ ', '█ █', '█ █'], L: ['█  ', '█  ', '█  ', '█  ', '███'],
+  M: ['█ █', '███', '███', '█ █', '█ █'], N: ['█ █', '███', '███', '███', '█ █'],
+  O: [' █ ', '█ █', '█ █', '█ █', ' █ '], P: ['██ ', '█ █', '██ ', '█  ', '█  '],
+  Q: [' █ ', '█ █', '█ █', '███', ' ██'], R: ['██ ', '█ █', '██ ', '█ █', '█ █'],
+  S: [' ██', '█  ', ' █ ', '  █', '██ '], T: ['███', ' █ ', ' █ ', ' █ ', ' █ '],
+  U: ['█ █', '█ █', '█ █', '█ █', ' █ '], V: ['█ █', '█ █', '█ █', '█ █', ' █ '],
+  W: ['█ █', '█ █', '███', '███', '█ █'], X: ['█ █', '█ █', ' █ ', '█ █', '█ █'],
+  Y: ['█ █', '█ █', ' █ ', ' █ ', ' █ '], Z: ['███', '  █', ' █ ', '█  ', '███'],
+  0: [' █ ', '█ █', '█ █', '█ █', ' █ '], 1: [' █ ', '██ ', ' █ ', ' █ ', '███'],
+  2: ['██ ', '  █', ' █ ', '█  ', '███'], 3: ['██ ', '  █', ' █ ', '  █', '██ '],
+  4: ['█ █', '█ █', '███', '  █', '  █'], 5: ['███', '█  ', '██ ', '  █', '██ '],
+  6: [' ██', '█  ', '██ ', '█ █', ' █ '], 7: ['███', '  █', ' █ ', ' █ ', ' █ '],
+  8: [' █ ', '█ █', ' █ ', '█ █', ' █ '], 9: [' █ ', '█ █', ' ██', '  █', ' █ '],
+  ' ': ['  ', '  ', '  ', '  ', '  '], '!': ['█', '█', '█', ' ', '█'],
+  '?': ['██', ' █', ' █', '  ', ' █'], '.': [' ', ' ', ' ', ' ', '█'],
+};
+function mountAsciiArt(mount) {
+  header(mount, 'Converter', 'Text to ASCII Art', 'Ubah teks pendek jadi banner ASCII art blok — kepake buat header file README atau iseng-iseng terminal.');
+  const c = card(`
+    <label>Teks (huruf, angka, spasi — maks 12 karakter)</label>
+    <input type="text" id="aa-in" value="HELLO" maxlength="12">
+    <label style="margin-top:16px">Hasil</label>
+    <div class="output" id="aa-out" style="font-size:12px;line-height:1.3"></div>
+    <div class="btn-row"><button class="btn" id="aa-copy">Salin</button></div>
+  `);
+  mount.appendChild(c);
+  const $in = c.querySelector('#aa-in');
+  const $out = c.querySelector('#aa-out');
+  function update() {
+    const text = $in.value.toUpperCase();
+    const rows = ['', '', '', '', ''];
+    for (const ch of text) {
+      const glyph = ASCII_FONT[ch] || ASCII_FONT['?'];
+      for (let i = 0; i < 5; i++) rows[i] += (glyph[i] || '   ') + ' ';
+    }
+    $out.textContent = rows.join('\n');
+  }
+  $in.addEventListener('input', update);
+  c.querySelector('#aa-copy').onclick = (e) => copyText($out.textContent, e.target);
+  update();
+}
+
 export const converterTools = [
-  { id: 'json-formatter', name: 'JSON Formatter', icon: '{ }', category: 'Converter', mount: mountJsonFormatter },
-  { id: 'base64', name: 'Base64 Encode/Decode', icon: '⇄', category: 'Converter', mount: mountBase64 },
-  { id: 'url-encoder', name: 'URL Encoder/Decoder', icon: '%', category: 'Converter', mount: mountUrlEncoder },
-  { id: 'color-converter', name: 'Color Converter', icon: '🎨', category: 'Converter', mount: mountColorConverter },
-  { id: 'qr-generator', name: 'QR Code Generator', icon: '▦', category: 'Converter', mount: mountQrGenerator },
-  { id: 'password-generator', name: 'Password Generator', icon: '🔑', category: 'Converter', mount: mountPasswordGenerator },
-  { id: 'lorem-ipsum', name: 'Lorem Ipsum Generator', icon: '¶', category: 'Converter', mount: mountLoremIpsum },
-  { id: 'word-counter', name: 'Word & Char Counter', icon: '#', category: 'Converter', mount: mountWordCounter },
+  { id: 'json-formatter', name: 'JSON Formatter', icon: '{ }', category: 'Converter', blurb: 'Rapikan & validasi JSON', mount: mountJsonFormatter },
+  { id: 'base64', name: 'Base64 Encode/Decode', icon: '⇄', category: 'Converter', blurb: 'Teks ke Base64, dan sebaliknya', mount: mountBase64 },
+  { id: 'url-encoder', name: 'URL Encoder/Decoder', icon: '%', category: 'Converter', blurb: 'Encode karakter buat URL', mount: mountUrlEncoder },
+  { id: 'color-converter', name: 'Color Converter', icon: '🎨', category: 'Converter', blurb: 'HEX, RGB, HSL saling konversi', mount: mountColorConverter },
+  { id: 'qr-generator', name: 'QR Code Generator', icon: '▦', category: 'Converter', blurb: 'Bikin QR dari teks/link', mount: mountQrGenerator },
+  { id: 'password-generator', name: 'Password Generator', icon: '🔑', category: 'Converter', blurb: 'Password acak yang aman', mount: mountPasswordGenerator },
+  { id: 'lorem-ipsum', name: 'Lorem Ipsum Generator', icon: '¶', category: 'Converter', blurb: 'Teks placeholder buat mockup', mount: mountLoremIpsum },
+  { id: 'word-counter', name: 'Word & Char Counter', icon: '#', category: 'Converter', blurb: 'Hitung kata & karakter', mount: mountWordCounter },
+  { id: 'number-base', name: 'Number Base Converter', icon: '10²', category: 'Converter', blurb: 'Biner, oktal, desimal, hex', mount: mountNumberBase },
+  { id: 'slug-generator', name: 'Slug Generator', icon: '/-/', category: 'Converter', blurb: 'Judul jadi slug URL', mount: mountSlugGenerator },
+  { id: 'username-generator', name: 'Random Name/Username', icon: '👤', category: 'Converter', blurb: 'Ide username acak', mount: mountUsernameGenerator },
+  { id: 'barcode-generator', name: 'Barcode Generator', icon: '▮▯', category: 'Converter', blurb: 'Barcode CODE128 dari teks', mount: mountBarcodeGenerator },
+  { id: 'ascii-art', name: 'Text to ASCII Art', icon: '▓', category: 'Converter', blurb: 'Teks jadi banner ASCII', mount: mountAsciiArt },
 ];

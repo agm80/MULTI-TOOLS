@@ -260,11 +260,162 @@ function mountCountdownTimer(mount) {
   };
 }
 
+// ---------- 7. Kalkulator Tabungan & Bunga ----------
+function mountSavingsCalculator(mount) {
+  header(mount, 'Harian', 'Kalkulator Tabungan & Bunga', 'Hitung hasil akhir tabungan dengan bunga sederhana atau majemuk (compound).');
+  const c = card(`
+    <div class="row">
+      <div><label>Modal awal (Rp)</label><input type="number" id="sv-principal" value="1000000"></div>
+      <div><label>Bunga per tahun (%)</label><input type="number" id="sv-rate" value="5"></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <div><label>Lama (tahun)</label><input type="number" id="sv-years" value="5"></div>
+      <div><label>Tipe bunga</label>
+        <select id="sv-type"><option value="compound">Majemuk (compound)</option><option value="simple">Sederhana (simple)</option></select>
+      </div>
+    </div>
+    <div class="btn-row"><button class="btn" id="sv-calc">Hitung</button></div>
+    <table class="kv" style="margin-top:16px">
+      <tr><td>Total akhir</td><td id="sv-total"></td></tr>
+      <tr><td>Total bunga</td><td id="sv-interest"></td></tr>
+    </table>
+  `);
+  mount.appendChild(c);
+  const idr = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
+  c.querySelector('#sv-calc').onclick = () => {
+    const p = parseFloat(c.querySelector('#sv-principal').value) || 0;
+    const r = (parseFloat(c.querySelector('#sv-rate').value) || 0) / 100;
+    const y = parseFloat(c.querySelector('#sv-years').value) || 0;
+    const type = c.querySelector('#sv-type').value;
+    const total = type === 'compound' ? p * Math.pow(1 + r, y) : p * (1 + r * y);
+    c.querySelector('#sv-total').textContent = idr(total);
+    c.querySelector('#sv-interest').textContent = idr(total - p);
+  };
+  c.querySelector('#sv-calc').click();
+}
+
+// ---------- 8. Kalkulator Zakat Maal ----------
+function mountZakatCalculator(mount) {
+  header(mount, 'Harian', 'Kalkulator Zakat Maal', 'Hitung zakat maal 2.5% dari total harta, kalau udah melewati nisab.');
+  const c = card(`
+    <div class="row">
+      <div><label>Total harta (Rp)</label><input type="number" id="zk-wealth" value="50000000"></div>
+      <div><label>Nilai nisab (Rp)</label><input type="number" id="zk-nisab" value="85000000"></div>
+    </div>
+    <div class="btn-row"><button class="btn" id="zk-calc">Hitung</button></div>
+    <div class="output" id="zk-out" style="margin-top:16px"></div>
+    <div class="hint">Nisab default berdasarkan estimasi 85 gram emas — sesuaikan dengan harga emas terkini. Zakat maal = 2.5% dari total harta kalau sudah mencapai nisab dan telah dimiliki 1 tahun (haul).</div>
+  `);
+  mount.appendChild(c);
+  const idr = (n) => 'Rp' + Math.round(n).toLocaleString('id-ID');
+  c.querySelector('#zk-calc').onclick = () => {
+    const wealth = parseFloat(c.querySelector('#zk-wealth').value) || 0;
+    const nisab = parseFloat(c.querySelector('#zk-nisab').value) || 0;
+    const $out = c.querySelector('#zk-out');
+    if (wealth < nisab) {
+      $out.textContent = `Belum wajib zakat — harta kamu di bawah nisab (${idr(nisab)}).`;
+    } else {
+      $out.textContent = `Wajib zakat: ${idr(wealth * 0.025)} (2.5% dari ${idr(wealth)})`;
+    }
+  };
+  c.querySelector('#zk-calc').click();
+}
+
+// ---------- 9. Pomodoro Timer ----------
+function mountPomodoroTimer(mount) {
+  header(mount, 'Harian', 'Pomodoro Timer', 'Teknik fokus 25 menit kerja, 5 menit istirahat — bantu kamu tetap produktif.');
+  const c = card(`
+    <div class="row">
+      <div><label>Durasi fokus (menit)</label><input type="number" id="pm-work" value="25"></div>
+      <div><label>Durasi istirahat (menit)</label><input type="number" id="pm-break" value="5"></div>
+    </div>
+    <div class="output" id="pm-display" style="margin-top:16px;font-size:36px;text-align:center;font-weight:700"></div>
+    <div class="output" id="pm-mode" style="text-align:center;margin-top:8px"></div>
+    <div class="btn-row" style="justify-content:center">
+      <button class="btn" id="pm-start">Mulai</button>
+      <button class="btn secondary" id="pm-pause">Jeda</button>
+      <button class="btn secondary" id="pm-reset">Reset</button>
+    </div>
+  `);
+  mount.appendChild(c);
+  let seconds = 25 * 60, mode = 'Fokus', interval = null;
+  const $display = c.querySelector('#pm-display');
+  const $mode = c.querySelector('#pm-mode');
+
+  function render() {
+    const m = Math.floor(seconds / 60), s = seconds % 60;
+    $display.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    $mode.textContent = mode === 'Fokus' ? '🎯 Waktunya fokus' : '☕ Waktunya istirahat';
+  }
+  function tick() {
+    if (!$display.isConnected) { clearInterval(interval); return; }
+    seconds--;
+    if (seconds < 0) {
+      mode = mode === 'Fokus' ? 'Istirahat' : 'Fokus';
+      seconds = (mode === 'Fokus' ? parseFloat(c.querySelector('#pm-work').value) : parseFloat(c.querySelector('#pm-break').value)) * 60;
+    }
+    render();
+  }
+  c.querySelector('#pm-start').onclick = () => { if (!interval) interval = setInterval(tick, 1000); };
+  c.querySelector('#pm-pause').onclick = () => { clearInterval(interval); interval = null; };
+  c.querySelector('#pm-reset').onclick = () => {
+    clearInterval(interval); interval = null; mode = 'Fokus';
+    seconds = (parseFloat(c.querySelector('#pm-work').value) || 25) * 60;
+    render();
+  };
+  render();
+}
+
+// ---------- 10. Kalkulator Air & Kalori Harian ----------
+function mountWaterCalorieCalculator(mount) {
+  header(mount, 'Harian', 'Kalkulator Air & Kalori Harian', 'Estimasi kebutuhan air dan kalori harian berdasarkan berat badan dan aktivitas.');
+  const c = card(`
+    <div class="row">
+      <div><label>Berat badan (kg)</label><input type="number" id="wc-weight" value="65"></div>
+      <div><label>Tinggi badan (cm)</label><input type="number" id="wc-height" value="170"></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <div><label>Umur</label><input type="number" id="wc-age" value="25"></div>
+      <div><label>Jenis kelamin</label><select id="wc-gender"><option value="m">Pria</option><option value="f">Wanita</option></select></div>
+    </div>
+    <label style="margin-top:14px">Level aktivitas</label>
+    <select id="wc-activity">
+      <option value="1.2">Jarang olahraga</option>
+      <option value="1.375">Olahraga ringan (1-3x/minggu)</option>
+      <option value="1.55">Olahraga sedang (3-5x/minggu)</option>
+      <option value="1.725">Olahraga berat (6-7x/minggu)</option>
+    </select>
+    <div class="btn-row"><button class="btn" id="wc-calc">Hitung</button></div>
+    <table class="kv" style="margin-top:16px">
+      <tr><td>Kebutuhan air</td><td id="wc-water"></td></tr>
+      <tr><td>Estimasi kalori harian</td><td id="wc-cal"></td></tr>
+    </table>
+    <div class="hint">Estimasi umum pakai rumus Mifflin-St Jeor — bukan pengganti saran ahli gizi.</div>
+  `);
+  mount.appendChild(c);
+  c.querySelector('#wc-calc').onclick = () => {
+    const w = parseFloat(c.querySelector('#wc-weight').value) || 0;
+    const h = parseFloat(c.querySelector('#wc-height').value) || 0;
+    const age = parseFloat(c.querySelector('#wc-age').value) || 0;
+    const gender = c.querySelector('#wc-gender').value;
+    const activity = parseFloat(c.querySelector('#wc-activity').value);
+    const water = w * 0.033;
+    const bmr = gender === 'm' ? 10 * w + 6.25 * h - 5 * age + 5 : 10 * w + 6.25 * h - 5 * age - 161;
+    c.querySelector('#wc-water').textContent = `${water.toFixed(1)} liter/hari`;
+    c.querySelector('#wc-cal').textContent = `${Math.round(bmr * activity).toLocaleString('id-ID')} kkal/hari`;
+  };
+  c.querySelector('#wc-calc').click();
+}
+
 export const harianTools = [
-  { id: 'unit-converter', name: 'Unit Converter', icon: '⇌', category: 'Harian', mount: mountUnitConverter },
-  { id: 'bmi-calculator', name: 'Kalkulator BMI', icon: '⚖', category: 'Harian', mount: mountBmiCalculator },
-  { id: 'age-calculator', name: 'Kalkulator Umur', icon: '🎂', category: 'Harian', mount: mountAgeCalculator },
-  { id: 'discount-calculator', name: 'Kalkulator Diskon & Persen', icon: '%', category: 'Harian', mount: mountDiscountCalculator },
-  { id: 'random-picker', name: 'Random Picker & Pembagi Kelompok', icon: '🎲', category: 'Harian', mount: mountRandomPicker },
-  { id: 'countdown-timer', name: 'Countdown ke Tanggal', icon: '⏳', category: 'Harian', mount: mountCountdownTimer },
+  { id: 'unit-converter', name: 'Unit Converter', icon: '⇌', category: 'Harian', blurb: 'Panjang, berat, suhu', mount: mountUnitConverter },
+  { id: 'bmi-calculator', name: 'Kalkulator BMI', icon: '⚖', category: 'Harian', blurb: 'Body Mass Index + kategori', mount: mountBmiCalculator },
+  { id: 'age-calculator', name: 'Kalkulator Umur', icon: '🎂', category: 'Harian', blurb: 'Umur persis dari tanggal lahir', mount: mountAgeCalculator },
+  { id: 'discount-calculator', name: 'Kalkulator Diskon & Persen', icon: '%', category: 'Harian', blurb: 'Harga diskon & persentase', mount: mountDiscountCalculator },
+  { id: 'random-picker', name: 'Random Picker & Pembagi Kelompok', icon: '🎲', category: 'Harian', blurb: 'Undian & bagi kelompok', mount: mountRandomPicker },
+  { id: 'countdown-timer', name: 'Countdown ke Tanggal', icon: '⏳', category: 'Harian', blurb: 'Hitung mundur ke acara/deadline', mount: mountCountdownTimer },
+  { id: 'savings-calculator', name: 'Kalkulator Tabungan & Bunga', icon: '💰', category: 'Harian', blurb: 'Bunga sederhana & majemuk', mount: mountSavingsCalculator },
+  { id: 'zakat-calculator', name: 'Kalkulator Zakat Maal', icon: '🕌', category: 'Harian', blurb: 'Zakat 2.5% dari harta', mount: mountZakatCalculator },
+  { id: 'pomodoro-timer', name: 'Pomodoro Timer', icon: '🍅', category: 'Harian', blurb: 'Fokus 25 menit, istirahat 5 menit', mount: mountPomodoroTimer },
+  { id: 'water-calorie', name: 'Kalkulator Air & Kalori Harian', icon: '💧', category: 'Harian', blurb: 'Kebutuhan air & kalori harian', mount: mountWaterCalorieCalculator },
 ];

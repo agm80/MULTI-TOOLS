@@ -54,3 +54,39 @@ export function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+// ---- Persisted state (favorites, recents, theme) ----
+const LS_FAV = 'bengkel:favorites';
+const LS_RECENT = 'bengkel:recents';
+const LS_THEME = 'bengkel:theme';
+
+function readJSON(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) { return fallback; }
+}
+function writeJSON(key, val) {
+  try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* storage unavailable, ignore */ }
+}
+
+export function getFavorites() { return readJSON(LS_FAV, []); }
+export function isFavorite(id) { return getFavorites().includes(id); }
+export function toggleFavorite(id) {
+  const favs = getFavorites();
+  const idx = favs.indexOf(id);
+  if (idx === -1) favs.push(id); else favs.splice(idx, 1);
+  writeJSON(LS_FAV, favs);
+  return favs.includes(id);
+}
+
+export function getRecents() { return readJSON(LS_RECENT, []); }
+export function pushRecent(id) {
+  let recents = getRecents().filter(r => r !== id);
+  recents.unshift(id);
+  recents = recents.slice(0, 8);
+  writeJSON(LS_RECENT, recents);
+}
+
+export function getTheme() { return localStorage.getItem(LS_THEME) || 'dark'; }
+export function setTheme(theme) { localStorage.setItem(LS_THEME, theme); }

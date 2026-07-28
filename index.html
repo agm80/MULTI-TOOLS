@@ -1,50 +1,66 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="id" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bengkel — Multitool untuk Kerjaan Kecil</title>
-<meta name="description" content="Kumpulan tools kecil yang sering kepake: converter, generator, text tools, image tools, dan dev tools. Semua jalan di browser, tanpa server.">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔧</text></svg>">
+<meta name="description" content="48 tools kecil yang sering kepake: kalkulator harian, converter, text tools, image tools, dan dev tools. Semua jalan di browser, tanpa server.">
+<meta name="theme-color" content="#0F1115">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%A7%B0%3C/text%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/JsBarcode/3.11.5/JsBarcode.all.min.js"></script>
 </head>
 <body>
 
 <div class="app">
 
-  <div class="backdrop" id="backdrop"></div>
+  <header class="topbar">
+    <a href="#" class="topbar__brand" id="brandLink">
+      <span class="topbar__mark">🔧</span>
+      <span class="topbar__title">Bengkel</span>
+    </a>
 
-  <aside class="pegboard" id="pegboard">
-    <div class="pegboard__head">
-      <div class="pegboard__mark">🔧</div>
-      <div>
-        <div class="pegboard__title">Bengkel</div>
-        <div class="pegboard__sub">28 tools, nol backend</div>
+    <div class="topbar__search">
+      <span class="topbar__search-icon">⌕</span>
+      <input type="text" id="toolSearch" placeholder="Cari di antara 48 tools...">
+    </div>
+
+    <button id="themeToggle" class="icon-btn" aria-label="Ganti tema" title="Ganti tema">🌙</button>
+  </header>
+
+  <div class="tabs" id="tabs"></div>
+
+  <main class="main" id="main">
+    <div class="home" id="homeView">
+      <section class="section" id="favSection" hidden>
+        <h2 class="section__title">⭐ Favorit</h2>
+        <div class="grid" id="favGrid"></div>
+      </section>
+      <section class="section" id="recentSection" hidden>
+        <h2 class="section__title">🕐 Baru dipakai</h2>
+        <div class="grid" id="recentGrid"></div>
+      </section>
+      <section class="section">
+        <h2 class="section__title" id="mainGridTitle">Semua tools</h2>
+        <div class="grid" id="mainGrid"></div>
+      </section>
+      <p class="empty-msg" id="noResults" hidden>Gak ketemu tool yang cocok. Coba kata kunci lain.</p>
+    </div>
+
+    <div class="tool-view" id="toolView" hidden>
+      <div class="tool-toolbar">
+        <button class="back-btn" id="backBtn">← Semua tools</button>
+        <button class="star-btn" id="favToggleBtn">☆ Favoritkan</button>
       </div>
-      <button id="navClose" class="pegboard__close" aria-label="Tutup menu">✕</button>
+      <div id="toolMount"></div>
     </div>
-
-    <input type="text" id="toolSearch" class="pegboard__search" placeholder="Cari tool...">
-
-    <nav id="pegboard__nav" class="pegboard__nav"></nav>
-
-    <div class="pegboard__foot">Semua proses di browser kamu.<br>Gak ada yang dikirim ke server.</div>
-  </aside>
-
-  <button id="navToggle" class="nav-toggle" aria-label="Buka menu">☰</button>
-
-  <main class="workbench" id="workbench">
-    <div class="workbench__empty" id="emptyState">
-      <div class="workbench__empty-mark">🧰</div>
-      <h1>Pilih tool di samping</h1>
-      <p>Semua tool jalan langsung di browser kamu — gak ada data yang dikirim ke server manapun.</p>
-    </div>
-    <div class="workbench__tool" id="toolMount" hidden></div>
   </main>
 
+  <footer class="footer">Semua tool jalan di browser kamu — gak ada data yang dikirim ke server manapun.</footer>
 </div>
 
 <script type="module" src="js/main.js"></script>

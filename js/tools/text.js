@@ -200,9 +200,149 @@ function mountRegexTester(mount) {
   $t.addEventListener('input', run);
 }
 
+// ---------- 13. Find & Replace Bulk ----------
+function mountFindReplace(mount) {
+  header(mount, 'Text', 'Find & Replace Bulk', 'Cari dan ganti teks sekaligus di banyak baris, dengan opsi regex.');
+  const c = card(`
+    <label>Teks</label>
+    <textarea id="fr-in" style="min-height:160px" placeholder="Tempel teks di sini..."></textarea>
+    <div class="row" style="margin-top:14px">
+      <div><label>Cari</label><input type="text" id="fr-find"></div>
+      <div><label>Ganti dengan</label><input type="text" id="fr-replace"></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-family:var(--font-body);color:var(--text)">
+      <input type="checkbox" id="fr-regex"> Anggap "Cari" sebagai regex
+    </label>
+    <div class="btn-row">
+      <button class="btn" id="fr-run">Ganti semua</button>
+      <button class="btn secondary" id="fr-copy">Salin hasil</button>
+    </div>
+    <label style="margin-top:16px">Hasil</label>
+    <div class="output" id="fr-out"></div>
+  `);
+  mount.appendChild(c);
+  const $out = c.querySelector('#fr-out');
+  c.querySelector('#fr-run').onclick = () => {
+    const text = c.querySelector('#fr-in').value;
+    const find = c.querySelector('#fr-find').value;
+    const replace = c.querySelector('#fr-replace').value;
+    const useRegex = c.querySelector('#fr-regex').checked;
+    try {
+      const result = useRegex ? text.replace(new RegExp(find, 'g'), replace) : text.split(find).join(replace);
+      $out.textContent = result;
+      $out.classList.remove('error');
+    } catch (e) {
+      $out.textContent = 'Regex error: ' + e.message;
+      $out.classList.add('error');
+    }
+  };
+  c.querySelector('#fr-copy').onclick = (e) => copyText($out.textContent, e.target);
+}
+
+// ---------- 14. Text Reverser & Palindrome Checker ----------
+function mountTextReverser(mount) {
+  header(mount, 'Text', 'Text Reverser & Palindrome Checker', 'Balik urutan teks, dan cek apakah teksnya palindrom (sama kalau dibaca dari belakang).');
+  const c = card(`
+    <label>Teks</label>
+    <input type="text" id="tr-in" value="Katak">
+    <label style="margin-top:16px">Dibalik</label>
+    <div class="output" id="tr-out"></div>
+    <div class="hint" id="tr-palindrome" style="margin-top:8px"></div>
+  `);
+  mount.appendChild(c);
+  const $in = c.querySelector('#tr-in');
+  function update() {
+    const val = $in.value;
+    const reversed = val.split('').reverse().join('');
+    c.querySelector('#tr-out').textContent = reversed;
+    const clean = val.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const isPalindrome = clean.length > 0 && clean === clean.split('').reverse().join('');
+    c.querySelector('#tr-palindrome').textContent = isPalindrome ? '✅ Ini palindrom!' : '❌ Bukan palindrom.';
+  }
+  $in.addEventListener('input', update);
+  update();
+}
+
+// ---------- 15. Duplicate Line Remover ----------
+function mountDuplicateRemover(mount) {
+  header(mount, 'Text', 'Duplicate Line Remover', 'Hapus baris yang duplikat dari daftar, sisain yang unik aja.');
+  const c = card(`
+    <label>Daftar (satu item per baris)</label>
+    <textarea id="dr-in" style="min-height:180px" placeholder="apel\npisang\napel\njeruk"></textarea>
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-family:var(--font-body);color:var(--text)">
+      <input type="checkbox" id="dr-case"> Case-sensitive
+    </label>
+    <div class="btn-row">
+      <button class="btn" id="dr-run">Hapus duplikat</button>
+      <button class="btn secondary" id="dr-copy">Salin hasil</button>
+    </div>
+    <label style="margin-top:16px">Hasil <span class="badge" id="dr-count"></span></label>
+    <div class="output" id="dr-out"></div>
+  `);
+  mount.appendChild(c);
+  const $out = c.querySelector('#dr-out');
+  c.querySelector('#dr-run').onclick = () => {
+    const lines = c.querySelector('#dr-in').value.split('\n');
+    const caseSensitive = c.querySelector('#dr-case').checked;
+    const seen = new Set();
+    const result = [];
+    for (const line of lines) {
+      const key = caseSensitive ? line : line.toLowerCase();
+      if (!seen.has(key)) { seen.add(key); result.push(line); }
+    }
+    $out.textContent = result.join('\n');
+    c.querySelector('#dr-count').textContent = `${lines.length} → ${result.length} baris`;
+  };
+  c.querySelector('#dr-copy').onclick = (e) => copyText($out.textContent, e.target);
+}
+
+// ---------- 16. Text Sorter ----------
+function mountTextSorter(mount) {
+  header(mount, 'Text', 'Text Sorter', 'Urutin baris teks secara alfabet atau berdasarkan panjang, naik atau turun.');
+  const c = card(`
+    <label>Daftar (satu item per baris)</label>
+    <textarea id="ts-in" style="min-height:180px">Citra
+Agam
+Budi
+Eka
+Dewi</textarea>
+    <div class="row" style="margin-top:14px">
+      <div>
+        <label>Urutkan berdasarkan</label>
+        <select id="ts-by"><option value="alpha">Alfabet (A-Z)</option><option value="length">Panjang teks</option></select>
+      </div>
+      <div>
+        <label>Arah</label>
+        <select id="ts-dir"><option value="asc">Naik (A→Z)</option><option value="desc">Turun (Z→A)</option></select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="ts-run">Urutkan</button>
+      <button class="btn secondary" id="ts-copy">Salin hasil</button>
+    </div>
+    <label style="margin-top:16px">Hasil</label>
+    <div class="output" id="ts-out"></div>
+  `);
+  mount.appendChild(c);
+  const $out = c.querySelector('#ts-out');
+  c.querySelector('#ts-run').onclick = () => {
+    const lines = c.querySelector('#ts-in').value.split('\n').filter(l => l.trim() !== '');
+    const by = c.querySelector('#ts-by').value;
+    const dir = c.querySelector('#ts-dir').value;
+    lines.sort((a, b) => by === 'alpha' ? a.localeCompare(b) : a.length - b.length);
+    if (dir === 'desc') lines.reverse();
+    $out.textContent = lines.join('\n');
+  };
+  c.querySelector('#ts-copy').onclick = (e) => copyText($out.textContent, e.target);
+}
+
 export const textTools = [
-  { id: 'text-case', name: 'Text Case Converter', icon: 'Aa', category: 'Text', mount: mountTextCase },
-  { id: 'markdown-preview', name: 'Markdown Previewer', icon: '📝', category: 'Text', mount: mountMarkdownPreview },
-  { id: 'diff-checker', name: 'Diff Checker', icon: '≠', category: 'Text', mount: mountDiffChecker },
-  { id: 'regex-tester', name: 'Regex Tester', icon: '.*', category: 'Text', mount: mountRegexTester },
+  { id: 'text-case', name: 'Text Case Converter', icon: 'Aa', category: 'Text', blurb: 'UPPER, lower, camelCase, dll', mount: mountTextCase },
+  { id: 'markdown-preview', name: 'Markdown Previewer', icon: '📝', category: 'Text', blurb: 'Preview Markdown langsung', mount: mountMarkdownPreview },
+  { id: 'diff-checker', name: 'Diff Checker', icon: '≠', category: 'Text', blurb: 'Bandingkan 2 teks baris per baris', mount: mountDiffChecker },
+  { id: 'regex-tester', name: 'Regex Tester', icon: '.*', category: 'Text', blurb: 'Coba pola regex dengan highlight', mount: mountRegexTester },
+  { id: 'find-replace', name: 'Find & Replace Bulk', icon: '⇄', category: 'Text', blurb: 'Cari-ganti massal, bisa regex', mount: mountFindReplace },
+  { id: 'text-reverser', name: 'Text Reverser & Palindrome', icon: '↔', category: 'Text', blurb: 'Balik teks & cek palindrom', mount: mountTextReverser },
+  { id: 'duplicate-remover', name: 'Duplicate Line Remover', icon: '⊟', category: 'Text', blurb: 'Hapus baris yang duplikat', mount: mountDuplicateRemover },
+  { id: 'text-sorter', name: 'Text Sorter', icon: '↕', category: 'Text', blurb: 'Urutkan baris A-Z atau panjang', mount: mountTextSorter },
 ];
