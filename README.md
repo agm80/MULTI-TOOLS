@@ -1,8 +1,11 @@
 # 🔧 Bengkel — Multitool Web
 
-Koleksi 21 tools kecil yang sering kepake sehari-hari — converter, text tools, image tools, dan dev tools — dikumpulkan jadi satu situs statis. Semuanya jalan **100% di browser**: gak ada backend, gak ada database, gak ada data yang dikirim ke server manapun.
+Koleksi 28 tools kecil yang sering kepake sehari-hari — kalkulator harian, converter, text tools, image tools, dan dev tools — dikumpulkan jadi satu situs statis. Semuanya jalan **100% di browser**: gak ada backend, gak ada database, gak ada data yang dikirim ke server manapun.
 
 ## Daftar tools
+
+**Harian**
+Unit Converter · Kalkulator BMI · Kalkulator Umur · Kalkulator Diskon & Persen · Random Picker & Pembagi Kelompok · Countdown ke Tanggal
 
 **Converter**
 JSON Formatter · Base64 Encode/Decode · URL Encoder/Decoder · Color Converter · QR Code Generator · Password Generator · Lorem Ipsum Generator · Word & Character Counter

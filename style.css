@@ -45,6 +45,19 @@ body{
   overflow-y:auto;
 }
 .pegboard__head{ display:flex; align-items:center; gap:10px; padding: 4px 6px 16px; }
+.pegboard__head > div:nth-child(2){ flex:1; min-width:0; }
+.pegboard__close{
+  display:none;
+  flex-shrink:0;
+  width:32px; height:32px;
+  border-radius:7px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 14px;
+  cursor:pointer;
+}
+.pegboard__close:hover{ color: var(--text); border-color: var(--amber); }
 .pegboard__mark{
   width:36px; height:36px; border-radius:8px;
   background: linear-gradient(160deg, var(--amber), #c97f22);
@@ -228,12 +241,24 @@ table.kv td:first-child{ color: var(--muted); font-family: var(--font-mono); wid
 ::selection{ background: var(--amber-dim); color: var(--amber); }
 
 /* ===== Responsive ===== */
+.backdrop{
+  display:none;
+  position: fixed; inset:0;
+  background: rgba(10,11,14,0.6);
+  z-index:35;
+}
+
 @media (max-width: 860px){
   .pegboard{
-    position: fixed; z-index:40; transform: translateX(-100%);
+    position: fixed; z-index:40; top:0; left:0; transform: translateX(-100%);
     transition: transform .2s ease; box-shadow: 0 0 40px rgba(0,0,0,.5);
+    width: min(280px, 82vw);
   }
   .pegboard.open{ transform: translateX(0); }
+  .backdrop.open{ display:block; }
+  .pegboard__close{ display:block; }
   .nav-toggle{ display:block; }
+  .pegboard.open + .nav-toggle{ display:none; }
   .workbench{ padding: 84px 20px 40px; }
+  body.nav-open{ overflow:hidden; }
 }
