@@ -225,7 +225,7 @@ Eka</textarea>
     }
     const groups = Array.from({ length: n }, () => []);
     list.forEach((item, i) => groups[i % n].push(item));
-    c.querySelector('#rp-groups-out').innerHTML = groups.map((g, i) => `<div style="margin-bottom:8px"><strong style="color:var(--amber)">Kelompok ${i + 1}:</strong> ${g.join(', ') || '-'}</div>`).join('');
+    c.querySelector('#rp-groups-out').innerHTML = groups.map((g, i) => `<div style="margin-bottom:8px"><strong style="color:var(--accent)">Kelompok ${i + 1}:</strong> ${g.join(', ') || '-'}</div>`).join('');
   };
 }
 

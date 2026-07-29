@@ -182,7 +182,7 @@ function mountRegexTester(mount) {
       while ((match = re.exec(text)) !== null) {
         count++;
         html += escapeHtml(text.slice(last, match.index));
-        html += `<mark style="background:var(--amber);color:#1a1305;border-radius:3px;padding:0 2px">${escapeHtml(match[0])}</mark>`;
+        html += `<mark style="background:var(--accent);color:#fff;border-radius:3px;padding:0 2px">${escapeHtml(match[0])}</mark>`;
         last = match.index + match[0].length;
         if (match[0] === '') re.lastIndex++;
       }
@@ -191,7 +191,7 @@ function mountRegexTester(mount) {
       $count.textContent = `${count} match`;
       $count.className = count ? 'badge ok' : 'badge';
     } catch (e) {
-      $out.innerHTML = `<span style="color:var(--red)">Regex error: ${escapeHtml(e.message)}</span>`;
+      $out.innerHTML = `<span style="color:var(--danger)">Regex error: ${escapeHtml(e.message)}</span>`;
       $count.textContent = '';
     }
   }

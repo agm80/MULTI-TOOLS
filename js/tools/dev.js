@@ -319,7 +319,7 @@ function mountHttpStatus(mount) {
     const items = HTTP_STATUSES.filter(([code, name, desc]) =>
       String(code).includes(f) || name.toLowerCase().includes(f) || desc.toLowerCase().includes(f));
     $list.innerHTML = items.map(([code, name, desc]) => {
-      const color = code < 300 ? 'var(--ok)' : code < 400 ? 'var(--cat-converter)' : 'var(--danger)';
+      const color = code < 300 ? 'var(--ok)' : code < 400 ? 'var(--accent)' : 'var(--danger)';
       return `<div style="display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
         <div style="font-family:var(--font-mono);font-weight:700;color:${color};width:48px;flex-shrink:0">${code}</div>
         <div><div style="font-weight:600;font-size:13.5px">${name}</div><div style="font-size:12.5px;color:var(--muted)">${desc}</div></div>

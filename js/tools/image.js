@@ -376,7 +376,7 @@ function mountImageCropper(mount) {
     <div id="cr-controls" hidden style="margin-top:16px">
       <div style="position:relative;display:inline-block;max-width:100%">
         <img id="cr-img" draggable="false" style="max-width:100%;display:block;border-radius:8px;-webkit-user-drag:none">
-        <div id="cr-box" style="position:absolute;border:2px dashed var(--accent);background:rgba(124,108,255,0.15);cursor:move;touch-action:none">
+        <div id="cr-box" style="position:absolute;border:2px dashed var(--accent);background:rgba(110,98,229,0.15);cursor:move;touch-action:none">
           <div id="cr-handle" style="position:absolute;right:-8px;bottom:-8px;width:18px;height:18px;background:var(--accent);border-radius:50%;cursor:nwse-resize;touch-action:none"></div>
         </div>
       </div>
