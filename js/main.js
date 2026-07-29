@@ -53,6 +53,8 @@ function closeNav() {
   document.body.classList.remove('nav-open');
 }
 
+let activeQuery = '';
+
 function navItem(tool) {
   const fav = isFavorite(tool.id);
   const item = document.createElement('button');
