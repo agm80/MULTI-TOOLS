@@ -35,6 +35,11 @@ const els = {
   backdrop: document.getElementById('backdrop'),
   themeToggle: document.getElementById('themeToggle'),
   brandLink: document.getElementById('brandLink'),
+  homeFavSection: document.getElementById('homeFavSection'),
+  homeFavGrid: document.getElementById('homeFavGrid'),
+  homeRecentSection: document.getElementById('homeRecentSection'),
+  homeRecentGrid: document.getElementById('homeRecentGrid'),
+  homeCatGrid: document.getElementById('homeCatGrid'),
 };
 
 function openNav() {
@@ -81,7 +86,48 @@ function group(label, tools) {
   return wrap;
 }
 
-let activeQuery = '';
+const CATEGORY_DESC = {
+  Harian: 'Kalkulator & utilitas harian',
+  Converter: 'Ubah & generate format data',
+  Text: 'Olah & analisis teks',
+  Image: 'Edit & convert gambar',
+  Dev: 'Utilitas buat developer',
+};
+
+function tile(tool) {
+  const btn = document.createElement('button');
+  btn.className = 'tile';
+  btn.innerHTML = `${iconSvg(tool.category, 'tile__icon')}<span>${tool.name}</span>`;
+  btn.onclick = () => { location.hash = tool.id; };
+  return btn;
+}
+
+function renderHome() {
+  const favs = getFavorites().map(id => TOOL_MAP[id]).filter(Boolean);
+  els.homeFavSection.hidden = favs.length === 0;
+  els.homeFavGrid.innerHTML = '';
+  favs.forEach(t => els.homeFavGrid.appendChild(tile(t)));
+
+  const recents = getRecents().map(id => TOOL_MAP[id]).filter(Boolean);
+  els.homeRecentSection.hidden = recents.length === 0;
+  els.homeRecentGrid.innerHTML = '';
+  recents.forEach(t => els.homeRecentGrid.appendChild(tile(t)));
+
+  els.homeCatGrid.innerHTML = '';
+  CATEGORIES.forEach((cat) => {
+    const items = ALL_TOOLS.filter(t => t.category === cat);
+    const card = document.createElement('button');
+    card.className = 'cat-card';
+    card.innerHTML = `
+      ${iconSvg(cat, 'cat-card__icon')}
+      <div class="cat-card__name">${cat}</div>
+      <div class="cat-card__desc">${CATEGORY_DESC[cat]}</div>
+      <div class="cat-card__count">${items.length} tools</div>
+    `;
+    card.onclick = () => { location.hash = items[0].id; };
+    els.homeCatGrid.appendChild(card);
+  });
+}
 function buildNav(filter = '') {
   activeQuery = filter;
   const f = filter.trim().toLowerCase();
@@ -118,6 +164,7 @@ function showEmpty() {
   els.emptyState.hidden = false;
   els.toolView.hidden = true;
   document.title = 'Bengkel — Multitool untuk Kerjaan Kecil';
+  renderHome();
 }
 
 function showTool(tool) {
