@@ -110,6 +110,7 @@ svg{ display:block; }
   color: var(--muted); padding: 14px 10px 6px;
 }
 .nav__group:first-child .nav__group-label{ padding-top:4px; }
+.nav__group--flash .nav__group-label{ color: var(--accent); transition: color .3s ease; }
 .nav__item{
   display:flex; align-items:center; gap:9px;
   padding: 7px 10px; margin: 1px 0;
@@ -172,6 +173,13 @@ svg{ display:block; }
 .cat-card__name{ font-weight:600; font-size:14px; margin-bottom:4px; }
 .cat-card__desc{ font-size:12px; color: var(--muted); margin-bottom:8px; line-height:1.4; }
 .cat-card__count{ font-family: var(--font-mono); font-size:11px; color: var(--muted); }
+
+.back-link{
+  background: transparent; border: none; color: var(--muted);
+  padding: 0; font-size: 12.5px; font-weight:500; cursor:pointer;
+  margin-bottom: 20px; display:block;
+}
+.back-link:hover{ color: var(--accent); }
 
 .tool-toolbar{ display:flex; justify-content:flex-end; margin-bottom: 4px; }
 .star-btn{

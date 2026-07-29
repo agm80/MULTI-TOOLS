@@ -40,6 +40,12 @@ const els = {
   homeRecentSection: document.getElementById('homeRecentSection'),
   homeRecentGrid: document.getElementById('homeRecentGrid'),
   homeCatGrid: document.getElementById('homeCatGrid'),
+  categoryView: document.getElementById('categoryView'),
+  categoryBack: document.getElementById('categoryBack'),
+  categoryEyebrow: document.getElementById('categoryEyebrow'),
+  categoryTitle: document.getElementById('categoryTitle'),
+  categoryDesc: document.getElementById('categoryDesc'),
+  categoryGrid: document.getElementById('categoryGrid'),
 };
 
 function openNav() {
@@ -126,7 +132,7 @@ function renderHome() {
       <div class="cat-card__desc">${CATEGORY_DESC[cat]}</div>
       <div class="cat-card__count">${items.length} tools</div>
     `;
-    card.onclick = () => { location.hash = items[0].id; };
+    card.onclick = () => { location.hash = 'cat:' + cat; };
     els.homeCatGrid.appendChild(card);
   });
 }
@@ -162,15 +168,31 @@ function markActive() {
   els.nav.querySelectorAll('.nav__item').forEach(el => el.classList.toggle('active', el.dataset.id === id));
 }
 
+function showCategory(cat) {
+  els.emptyState.hidden = true;
+  els.toolView.hidden = true;
+  els.categoryView.hidden = false;
+  document.title = `${cat} — Bengkel`;
+  els.categoryEyebrow.textContent = 'Kategori';
+  els.categoryTitle.textContent = cat;
+  els.categoryDesc.textContent = CATEGORY_DESC[cat] || '';
+  els.categoryGrid.innerHTML = '';
+  ALL_TOOLS.filter(t => t.category === cat).forEach(t => els.categoryGrid.appendChild(tile(t)));
+  window.scrollTo(0, 0);
+  closeNav();
+}
+
 function showEmpty() {
   els.emptyState.hidden = false;
   els.toolView.hidden = true;
+  els.categoryView.hidden = true;
   document.title = 'Bengkel — Multitool untuk Kerjaan Kecil';
   renderHome();
 }
 
 function showTool(tool) {
   els.emptyState.hidden = true;
+  els.categoryView.hidden = true;
   els.toolView.hidden = false;
   els.toolMount.innerHTML = '';
   tool.mount(els.toolMount);
@@ -192,12 +214,17 @@ function showTool(tool) {
 
 function route() {
   const id = location.hash.slice(1);
+  if (id.startsWith('cat:')) {
+    const cat = decodeURIComponent(id.slice(4));
+    if (CATEGORIES.includes(cat)) { showCategory(cat); markActive(); return; }
+  }
   const tool = TOOL_MAP[id];
   if (tool) showTool(tool); else showEmpty();
   markActive();
 }
 
 window.addEventListener('hashchange', route);
+els.categoryBack.addEventListener('click', () => { location.hash = ''; });
 els.search.addEventListener('input', (e) => buildNav(e.target.value));
 els.navToggle.addEventListener('click', openNav);
 els.navClose.addEventListener('click', closeNav);
