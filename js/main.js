@@ -8,153 +8,154 @@ import { getFavorites, isFavorite, toggleFavorite, getRecents, pushRecent, getTh
 const ALL_TOOLS = [...harianTools, ...converterTools, ...textTools, ...imageTools, ...devTools];
 const TOOL_MAP = Object.fromEntries(ALL_TOOLS.map(t => [t.id, t]));
 const CATEGORIES = ['Harian', 'Converter', 'Text', 'Image', 'Dev'];
-const CATEGORY_CODE = { Harian: 'H', Converter: 'C', Text: 'T', Image: 'I', Dev: 'D' };
 
-// Bin code: each tool's shelf position within its category, e.g. "H-03".
-const catCounters = {};
-const TOOL_CODE = {};
-ALL_TOOLS.forEach((t) => {
-  catCounters[t.category] = (catCounters[t.category] || 0) + 1;
-  TOOL_CODE[t.id] = `${CATEGORY_CODE[t.category]}-${String(catCounters[t.category]).padStart(2, '0')}`;
-});
+// Small line-icon set (no emoji) — one glyph per category, reused everywhere.
+const ICONS = {
+  Harian: '<path d="M8 3v4M16 3v4M4 9h16M5 6h14a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1Z"/>',
+  Converter: '<path d="M7 7h11l-3-3M17 17H6l3 3"/>',
+  Text: '<path d="M5 6h14M5 12h9M5 18h6"/>',
+  Image: '<path d="M4 6h16v12H4z"/><circle cx="9" cy="10" r="1.5"/><path d="M20 16l-5-5-4 4-2-2-5 5"/>',
+  Dev: '<path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/>',
+  star: '<path d="M12 3l2.6 5.6 6.1.6-4.6 4.1 1.3 6-5.4-3.2L6.6 19.3l1.3-6-4.6-4.1 6.1-.6L12 3Z"/>',
+};
+function iconSvg(name, extraClass = '') {
+  return `<svg class="${extraClass}" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${ICONS[name]}</svg>`;
+}
 
 const els = {
-  tabs: document.getElementById('tabs'),
+  nav: document.getElementById('nav'),
   search: document.getElementById('toolSearch'),
-  homeView: document.getElementById('homeView'),
+  emptyState: document.getElementById('emptyState'),
   toolView: document.getElementById('toolView'),
   toolMount: document.getElementById('toolMount'),
-  favSection: document.getElementById('favSection'),
-  favGrid: document.getElementById('favGrid'),
-  recentSection: document.getElementById('recentSection'),
-  recentGrid: document.getElementById('recentGrid'),
-  mainGrid: document.getElementById('mainGrid'),
-  mainGridTitle: document.getElementById('mainGridTitle'),
-  noResults: document.getElementById('noResults'),
-  backBtn: document.getElementById('backBtn'),
-  favToggleBtn: document.getElementById('favToggleBtn'),
-  toolCode: document.getElementById('toolCode'),
+  toolToolbar: document.getElementById('toolToolbar'),
+  sidebar: document.getElementById('sidebar'),
+  navToggle: document.getElementById('navToggle'),
+  navClose: document.getElementById('navClose'),
+  backdrop: document.getElementById('backdrop'),
   themeToggle: document.getElementById('themeToggle'),
   brandLink: document.getElementById('brandLink'),
 };
 
-let activeTab = 'all';
-let searchQuery = '';
+function openNav() {
+  els.sidebar.classList.add('open');
+  els.backdrop.classList.add('open');
+  document.body.classList.add('nav-open');
+}
+function closeNav() {
+  els.sidebar.classList.remove('open');
+  els.backdrop.classList.remove('open');
+  document.body.classList.remove('nav-open');
+}
 
-function toolCard(tool) {
+function navItem(tool) {
   const fav = isFavorite(tool.id);
-  const div = document.createElement('div');
-  div.className = 'tool-card';
-  div.innerHTML = `
-    <button class="tool-card__star ${fav ? 'active' : ''}" data-fav="${tool.id}">${fav ? '★' : '☆'}</button>
-    <div class="tool-card__tag">${TOOL_CODE[tool.id]}</div>
-    <div class="tool-card__name">${tool.name}</div>
-    <div class="tool-card__blurb">${tool.blurb || ''}</div>
+  const item = document.createElement('button');
+  item.className = 'nav__item';
+  item.dataset.id = tool.id;
+  item.innerHTML = `
+    <span class="nav__item-icon">${iconSvg(tool.category)}</span>
+    <span class="nav__item-name">${tool.name}</span>
+    <span class="nav__item-star ${fav ? 'active' : ''}" data-fav="${tool.id}">${fav ? '★' : '☆'}</span>
   `;
-  div.addEventListener('click', (e) => {
+  item.addEventListener('click', (e) => {
     if (e.target.closest('[data-fav]')) return;
     location.hash = tool.id;
   });
-  div.querySelector('[data-fav]').addEventListener('click', (e) => {
+  item.querySelector('[data-fav]').addEventListener('click', (e) => {
     e.stopPropagation();
     const nowFav = toggleFavorite(tool.id);
     e.target.classList.toggle('active', nowFav);
     e.target.textContent = nowFav ? '★' : '☆';
-    renderHome();
+    if (activeQuery.trim() === '') buildNav('');
   });
-  return div;
+  return item;
 }
 
-function buildTabs() {
-  els.tabs.innerHTML = '';
-  const allBtn = document.createElement('button');
-  allBtn.className = 'tab' + (activeTab === 'all' ? ' active' : '');
-  allBtn.textContent = 'Semua';
-  allBtn.onclick = () => { activeTab = 'all'; renderHome(); };
-  els.tabs.appendChild(allBtn);
+function group(label, tools) {
+  if (!tools.length) return '';
+  const wrap = document.createElement('div');
+  wrap.className = 'nav__group';
+  wrap.innerHTML = `<div class="nav__group-label">${label}</div>`;
+  tools.forEach(t => wrap.appendChild(navItem(t)));
+  return wrap;
+}
+
+let activeQuery = '';
+function buildNav(filter = '') {
+  activeQuery = filter;
+  const f = filter.trim().toLowerCase();
+  els.nav.innerHTML = '';
+
+  if (!f) {
+    const favs = getFavorites().map(id => TOOL_MAP[id]).filter(Boolean);
+    if (favs.length) els.nav.appendChild(group('Favorit', favs));
+    const recents = getRecents().map(id => TOOL_MAP[id]).filter(Boolean);
+    if (recents.length) els.nav.appendChild(group('Baru dipakai', recents));
+  }
+
+  let any = false;
   CATEGORIES.forEach((cat) => {
-    const btn = document.createElement('button');
-    btn.className = 'tab' + (activeTab === cat ? ' active' : '');
-    btn.textContent = cat;
-    btn.onclick = () => { activeTab = cat; renderHome(); };
-    els.tabs.appendChild(btn);
+    const items = ALL_TOOLS.filter(t => t.category === cat &&
+      (t.name.toLowerCase().includes(f) || (t.blurb || '').toLowerCase().includes(f)));
+    if (items.length) { any = true; els.nav.appendChild(group(cat, items)); }
   });
+  if (!any) {
+    const p = document.createElement('p');
+    p.className = 'nav__empty';
+    p.textContent = 'Gak ketemu tool yang cocok.';
+    els.nav.appendChild(p);
+  }
+  markActive();
 }
 
-function renderHome() {
-  buildTabs();
-  const q = searchQuery.trim().toLowerCase();
-
-  const favs = getFavorites().map(id => TOOL_MAP[id]).filter(Boolean);
-  if (favs.length && activeTab === 'all' && !q) {
-    els.favSection.hidden = false;
-    els.favGrid.innerHTML = '';
-    favs.forEach(t => els.favGrid.appendChild(toolCard(t)));
-  } else {
-    els.favSection.hidden = true;
-  }
-
-  const recents = getRecents().map(id => TOOL_MAP[id]).filter(Boolean);
-  if (recents.length && activeTab === 'all' && !q) {
-    els.recentSection.hidden = false;
-    els.recentGrid.innerHTML = '';
-    recents.forEach(t => els.recentGrid.appendChild(toolCard(t)));
-  } else {
-    els.recentSection.hidden = true;
-  }
-
-  let list = ALL_TOOLS;
-  if (activeTab !== 'all') list = list.filter(t => t.category === activeTab);
-  if (q) list = list.filter(t => t.name.toLowerCase().includes(q) || (t.blurb || '').toLowerCase().includes(q));
-
-  els.mainGridTitle.textContent = q ? `Hasil pencarian "${searchQuery}"` : activeTab === 'all' ? 'Semua tools' : activeTab;
-  els.mainGrid.innerHTML = '';
-  list.forEach(t => els.mainGrid.appendChild(toolCard(t)));
-  els.noResults.hidden = list.length > 0;
+function markActive() {
+  const id = location.hash.slice(1);
+  els.nav.querySelectorAll('.nav__item').forEach(el => el.classList.toggle('active', el.dataset.id === id));
 }
 
-function showHome() {
-  els.homeView.hidden = false;
+function showEmpty() {
+  els.emptyState.hidden = false;
   els.toolView.hidden = true;
   document.title = 'Bengkel — Multitool untuk Kerjaan Kecil';
-  renderHome();
 }
 
 function showTool(tool) {
-  els.homeView.hidden = true;
+  els.emptyState.hidden = true;
   els.toolView.hidden = false;
   els.toolMount.innerHTML = '';
   tool.mount(els.toolMount);
   document.title = `${tool.name} — Bengkel`;
   pushRecent(tool.id);
-  els.toolCode.textContent = TOOL_CODE[tool.id];
 
   const fav = isFavorite(tool.id);
-  els.favToggleBtn.classList.toggle('active', fav);
-  els.favToggleBtn.textContent = fav ? '★ Favorit' : '☆ Favoritkan';
-  els.favToggleBtn.onclick = () => {
+  els.toolToolbar.innerHTML = `<button class="star-btn ${fav ? 'active' : ''}" id="favToggleBtn">${iconSvg('star')} ${fav ? 'Favorit' : 'Favoritkan'}</button>`;
+  els.toolToolbar.querySelector('#favToggleBtn').onclick = (e) => {
     const nowFav = toggleFavorite(tool.id);
-    els.favToggleBtn.classList.toggle('active', nowFav);
-    els.favToggleBtn.textContent = nowFav ? '★ Favorit' : '☆ Favoritkan';
+    const btn = e.currentTarget;
+    btn.classList.toggle('active', nowFav);
+    btn.innerHTML = `${iconSvg('star')} ${nowFav ? 'Favorit' : 'Favoritkan'}`;
+    if (activeQuery.trim() === '') buildNav('');
   };
   window.scrollTo(0, 0);
+  closeNav();
 }
 
 function route() {
   const id = location.hash.slice(1);
   const tool = TOOL_MAP[id];
-  if (tool) showTool(tool); else showHome();
+  if (tool) showTool(tool); else showEmpty();
+  markActive();
 }
 
 window.addEventListener('hashchange', route);
-els.backBtn.addEventListener('click', () => { location.hash = ''; });
+els.search.addEventListener('input', (e) => buildNav(e.target.value));
+els.navToggle.addEventListener('click', openNav);
+els.navClose.addEventListener('click', closeNav);
+els.backdrop.addEventListener('click', closeNav);
 els.brandLink.addEventListener('click', (e) => { e.preventDefault(); location.hash = ''; });
-els.search.addEventListener('input', (e) => { searchQuery = e.target.value; if (!els.homeView.hidden) renderHome(); else if (searchQuery) { location.hash = ''; renderHome(); } });
 
-function applyTheme(theme) {
-  document.documentElement.setAttribute('data-theme', theme);
-  els.themeToggle.textContent = theme === 'dark' ? '🌙' : '☀️';
-}
+function applyTheme(theme) { document.documentElement.setAttribute('data-theme', theme); }
 els.themeToggle.addEventListener('click', () => {
   const next = getTheme() === 'dark' ? 'light' : 'dark';
   setTheme(next);
@@ -162,4 +163,5 @@ els.themeToggle.addEventListener('click', () => {
 });
 applyTheme(getTheme());
 
+buildNav();
 route();
