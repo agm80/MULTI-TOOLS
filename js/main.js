@@ -127,9 +127,8 @@ function renderHome() {
     const card = document.createElement('button');
     card.className = 'cat-card';
     card.innerHTML = `
-      ${iconSvg(cat, 'cat-card__icon')}
+      <div class="cat-card__icon-frame">${iconSvg(cat, 'cat-card__icon')}</div>
       <div class="cat-card__name">${cat}</div>
-      <div class="cat-card__desc">${CATEGORY_DESC[cat]}</div>
       <div class="cat-card__count">${items.length} tools</div>
     `;
     card.onclick = () => { location.hash = 'cat:' + cat; };
