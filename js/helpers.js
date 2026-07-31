@@ -18,6 +18,7 @@ export function card(html) {
 export async function copyText(text, btn) {
   try {
     await navigator.clipboard.writeText(text);
+    showToast('Tersalin ke clipboard');
     if (btn) {
       const original = btn.textContent;
       btn.textContent = 'Tersalin ✓';
@@ -71,6 +72,7 @@ function writeJSON(key, val) {
 }
 
 export function getFavorites() { return readJSON(LS_FAV, []); }
+export function setFavorites(list) { writeJSON(LS_FAV, Array.isArray(list) ? list : []); }
 export function isFavorite(id) { return getFavorites().includes(id); }
 export function toggleFavorite(id) {
   const favs = getFavorites();
@@ -81,6 +83,7 @@ export function toggleFavorite(id) {
 }
 
 export function getRecents() { return readJSON(LS_RECENT, []); }
+export function setRecents(list) { writeJSON(LS_RECENT, Array.isArray(list) ? list : []); }
 export function pushRecent(id) {
   let recents = getRecents().filter(r => r !== id);
   recents.unshift(id);
@@ -90,3 +93,51 @@ export function pushRecent(id) {
 
 export function getTheme() { return localStorage.getItem(LS_THEME) || 'dark'; }
 export function setTheme(theme) { localStorage.setItem(LS_THEME, theme); }
+
+// ---- Usage stats ----
+const LS_USAGE = 'bengkel:usage';
+export function trackUsage(id) {
+  const usage = readJSON(LS_USAGE, {});
+  usage[id] = (usage[id] || 0) + 1;
+  writeJSON(LS_USAGE, usage);
+}
+export function getUsageStats() {
+  const usage = readJSON(LS_USAGE, {});
+  return Object.entries(usage)
+    .map(([id, count]) => ({ id, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// ---- Export / import personal data (favorites, recents, usage) ----
+export function exportData() {
+  return JSON.stringify({
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    favorites: getFavorites(),
+    recents: getRecents(),
+    usage: readJSON(LS_USAGE, {}),
+  }, null, 2);
+}
+export function importData(jsonString) {
+  const data = JSON.parse(jsonString);
+  if (Array.isArray(data.favorites)) setFavorites(data.favorites);
+  if (Array.isArray(data.recents)) setRecents(data.recents);
+  if (data.usage && typeof data.usage === 'object') writeJSON(LS_USAGE, data.usage);
+  return true;
+}
+
+// ---- Toast notification ----
+let toastTimer = null;
+export function showToast(message) {
+  let toast = document.getElementById('bengkelToast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'bengkelToast';
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add('toast--show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('toast--show'), 1600);
+}

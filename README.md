@@ -6,8 +6,11 @@ Koleksi 48 tools kecil yang sering kepake sehari-hari — kalkulator harian, con
 
 - ⭐ **Favorit** — pin tool yang sering dipake, tersimpan di browser kamu (localStorage)
 - 🕐 **Baru dipakai** — 8 tool terakhir yang dibuka otomatis muncul di beranda
+- 📊 **Statistik pemakaian** — lihat tool apa yang paling sering kamu pakai (tombol "Statistik" di sidebar)
 - 🌙/☀️ **Tema gelap & terang** — tinggal klik ikon di pojok kanan atas
-- 🔍 **Pencarian** — cari tool dari 48 pilihan tanpa scroll manual
+- 🔍 **Pencarian cepat** — cari tool dari 48 pilihan, tekan `/` atau `Ctrl+K` (`Cmd+K` di Mac) buat langsung fokus ke kolom cari dari mana aja. Tekan `Esc` buat nutup sidebar / balik ke beranda.
+- 💾 **Export/Import data** — backup favorit, riwayat, dan statistik ke file JSON (tombol di bawah sidebar), bisa diimpor lagi kalau ganti HP/browser
+- 📴 **Bisa dibuka offline** — pakai Service Worker, situsnya tetap kebuka meski gak ada internet (kecuali tool yang emang butuh koneksi: QR Generator & Barcode Generator)
 - 📱 **Installable (PWA)** — bisa di-"Add to Home Screen" di HP
 
 ## Daftar tools

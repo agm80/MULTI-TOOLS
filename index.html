@@ -38,6 +38,13 @@
     </div>
 
     <nav id="nav" class="nav"></nav>
+
+    <div class="sidebar__footer">
+      <button id="statsBtn" class="sidebar__footer-btn">Statistik</button>
+      <button id="exportBtn" class="sidebar__footer-btn">Export</button>
+      <button id="importBtn" class="sidebar__footer-btn">Import</button>
+      <input type="file" id="importFile" accept="application/json" hidden>
+    </div>
   </aside>
 
   <button id="navToggle" class="nav-toggle" aria-label="Buka menu">
@@ -69,6 +76,15 @@
       <h1 class="tool-title" id="categoryTitle"></h1>
       <p class="tool-desc" id="categoryDesc"></p>
       <div class="tile-grid" id="categoryGrid"></div>
+    </div>
+
+    <div class="tool-view" id="statsView" hidden>
+      <button class="back-link" id="statsBack">← Beranda</button>
+      <p class="empty__eyebrow">Statistik</p>
+      <h1 class="tool-title">Kebiasaan Kamu</h1>
+      <p class="tool-desc" id="statsSummary"></p>
+      <div id="statsEmpty" class="hint" hidden>Belum ada data pemakaian. Pakai beberapa tool dulu, nanti statistiknya muncul di sini.</div>
+      <div class="tile-grid" id="statsGrid"></div>
     </div>
 
     <div class="tool-view" id="toolView" hidden>

@@ -3,7 +3,14 @@ import { converterTools } from './tools/converters.js';
 import { textTools } from './tools/text.js';
 import { imageTools } from './tools/image.js';
 import { devTools } from './tools/dev.js';
-import { getFavorites, isFavorite, toggleFavorite, getRecents, pushRecent, getTheme, setTheme } from './helpers.js';
+import {
+  getFavorites, isFavorite, toggleFavorite, setFavorites,
+  getRecents, pushRecent, setRecents,
+  getTheme, setTheme,
+  trackUsage, getUsageStats,
+  exportData, importData,
+  showToast, downloadBlob,
+} from './helpers.js';
 
 const ALL_TOOLS = [...harianTools, ...converterTools, ...textTools, ...imageTools, ...devTools];
 const TOOL_MAP = Object.fromEntries(ALL_TOOLS.map(t => [t.id, t]));
@@ -46,6 +53,15 @@ const els = {
   categoryTitle: document.getElementById('categoryTitle'),
   categoryDesc: document.getElementById('categoryDesc'),
   categoryGrid: document.getElementById('categoryGrid'),
+  statsBtn: document.getElementById('statsBtn'),
+  exportBtn: document.getElementById('exportBtn'),
+  importBtn: document.getElementById('importBtn'),
+  importFile: document.getElementById('importFile'),
+  statsView: document.getElementById('statsView'),
+  statsBack: document.getElementById('statsBack'),
+  statsSummary: document.getElementById('statsSummary'),
+  statsEmpty: document.getElementById('statsEmpty'),
+  statsGrid: document.getElementById('statsGrid'),
 };
 
 function openNav() {
@@ -170,6 +186,7 @@ function markActive() {
 function showCategory(cat) {
   els.emptyState.hidden = true;
   els.toolView.hidden = true;
+  els.statsView.hidden = true;
   els.categoryView.hidden = false;
   document.title = `${cat} — Bengkel`;
   els.categoryEyebrow.textContent = 'Kategori';
@@ -181,10 +198,34 @@ function showCategory(cat) {
   closeNav();
 }
 
+function showStats() {
+  els.emptyState.hidden = true;
+  els.toolView.hidden = true;
+  els.categoryView.hidden = true;
+  els.statsView.hidden = false;
+  document.title = 'Statistik — Bengkel';
+  const stats = getUsageStats();
+  const triedCount = stats.length;
+  const totalOpens = stats.reduce((sum, s) => sum + s.count, 0);
+  els.statsSummary.textContent = `Kamu udah nyoba ${triedCount} dari ${ALL_TOOLS.length} tools, total ${totalOpens} kali dibuka.`;
+  els.statsEmpty.hidden = stats.length > 0;
+  els.statsGrid.innerHTML = '';
+  stats.slice(0, 12).forEach(({ id, count }) => {
+    const tool = TOOL_MAP[id];
+    if (!tool) return;
+    const btn = tile(tool);
+    btn.innerHTML += `<span class="badge">${count}×</span>`;
+    els.statsGrid.appendChild(btn);
+  });
+  window.scrollTo(0, 0);
+  closeNav();
+}
+
 function showEmpty() {
   els.emptyState.hidden = false;
   els.toolView.hidden = true;
   els.categoryView.hidden = true;
+  els.statsView.hidden = true;
   document.title = 'Bengkel — Multitool untuk Kerjaan Kecil';
   renderHome();
 }
@@ -192,11 +233,13 @@ function showEmpty() {
 function showTool(tool) {
   els.emptyState.hidden = true;
   els.categoryView.hidden = true;
+  els.statsView.hidden = true;
   els.toolView.hidden = false;
   els.toolMount.innerHTML = '';
   tool.mount(els.toolMount);
   document.title = `${tool.name} — Bengkel`;
   pushRecent(tool.id);
+  trackUsage(tool.id);
 
   const fav = isFavorite(tool.id);
   els.toolToolbar.innerHTML = `<button class="star-btn ${fav ? 'active' : ''}" id="favToggleBtn">${iconSvg('star')} ${fav ? 'Favorit' : 'Favoritkan'}</button>`;
@@ -213,6 +256,7 @@ function showTool(tool) {
 
 function route() {
   const id = location.hash.slice(1);
+  if (id === 'stats') { showStats(); markActive(); return; }
   if (id.startsWith('cat:')) {
     const cat = decodeURIComponent(id.slice(4));
     if (CATEGORIES.includes(cat)) { showCategory(cat); markActive(); return; }
@@ -224,6 +268,8 @@ function route() {
 
 window.addEventListener('hashchange', route);
 els.categoryBack.addEventListener('click', () => { location.hash = ''; });
+els.statsBack.addEventListener('click', () => { location.hash = ''; });
+els.statsBtn.addEventListener('click', () => { location.hash = 'stats'; });
 els.search.addEventListener('input', (e) => buildNav(e.target.value));
 els.navToggle.addEventListener('click', openNav);
 els.navClose.addEventListener('click', closeNav);
@@ -237,6 +283,52 @@ els.themeToggle.addEventListener('click', () => {
   applyTheme(next);
 });
 applyTheme(getTheme());
+
+// ---- Keyboard shortcuts: "/" or Ctrl/Cmd+K to search, Esc to close/back ----
+document.addEventListener('keydown', (e) => {
+  const isTyping = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+  if ((e.key === '/' && !isTyping) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
+    e.preventDefault();
+    openNav();
+    els.search.focus();
+    els.search.select();
+  } else if (e.key === 'Escape') {
+    if (els.sidebar.classList.contains('open')) { closeNav(); }
+    else if (location.hash) { location.hash = ''; }
+  }
+});
+
+// ---- Export / import personal data ----
+els.exportBtn.addEventListener('click', () => {
+  const blob = new Blob([exportData()], { type: 'application/json' });
+  downloadBlob(blob, `bengkel-data-${new Date().toISOString().slice(0, 10)}.json`);
+  showToast('Data diekspor');
+});
+els.importBtn.addEventListener('click', () => els.importFile.click());
+els.importFile.addEventListener('change', () => {
+  const file = els.importFile.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      importData(e.target.result);
+      showToast('Data berhasil diimpor');
+      buildNav(activeQuery);
+      if (els.emptyState.hidden === false) renderHome();
+    } catch (err) {
+      showToast('Gagal impor: file tidak valid');
+    }
+    els.importFile.value = '';
+  };
+  reader.readAsText(file);
+});
+
+// ---- Offline support ----
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => { /* offline support unavailable, ignore */ });
+  });
+}
 
 buildNav();
 route();
